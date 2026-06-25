@@ -1,26 +1,29 @@
 <?php
 /*
-Plugin Name: Functiebeheer
-Description: Schakel functionaliteiten in/uit via tabbladen in het admin menu.
-Version: 1.3
+Plugin Name: LMPR Tools
+Description: Diverse functies voor LMPR klanten
+Version: 1.1
 Author: Lamper Design
+Plugin URI: https://github.com/lamperdesign/lmpr-tools
 */
 
-// Voeg admin menu toe
+// ─── 1. Admin menu ────────────────────────────────────────────────────────────
+
 add_action('admin_menu', function () {
     add_menu_page(
-        'Functiebeheer',
-        'Functiebeheer',
+        'LMPR Tools',
+        'LMPR Tools',
         'manage_options',
-        'functiebeheer',
+        'lmpr-tools',                   // ← was 'LMPR Tools' (spaties/hoofdletters breken screen ID)
         'render_functiebeheer_page'
     );
 }, 99);
 
-// Admin styling
+// ─── 2. Admin styling ─────────────────────────────────────────────────────────
+
 add_action('admin_head', function () {
     $screen = get_current_screen();
-    if ($screen && $screen->id === 'toplevel_page_functiebeheer') {
+    if ($screen && $screen->id === 'toplevel_page_lmpr-tools') {   // ← was toplevel_page_functiebeheer
         echo '<style>
             .functiebeheer-field {
                 padding-bottom: 15px;
@@ -46,20 +49,21 @@ add_action('admin_head', function () {
                 padding: 10px;
             }
             .wrap .widefat {
-            width: fit-content;
-            min-width: 50%;
+                width: fit-content;
+                min-width: 50%;
             }
             .wrap .widefat th {
-            font-weight:500;
-    }
+                font-weight: 500;
+            }
         </style>';
     }
 });
 
-// Render admin pagina
+// ─── 3. Render admin pagina ───────────────────────────────────────────────────
+
 function render_functiebeheer_page() {
     $has_woocommerce = class_exists('WooCommerce');
-    $has_facetwp = defined('FACETWP_VERSION');
+    $has_facetwp     = defined('FACETWP_VERSION');
 
     $allowed_tabs = ['algemeen'];
     if ($has_woocommerce) {
@@ -71,30 +75,29 @@ function render_functiebeheer_page() {
     }
     $allowed_tabs[] = 'links';
 
-    $active_tab = $_GET['tab'] ?? 'algemeen';
+    $active_tab = sanitize_key($_GET['tab'] ?? 'algemeen');     // ← sanitize toegevoegd
     if (!in_array($active_tab, $allowed_tabs)) {
         $active_tab = 'algemeen';
     }
-    ?>
-    <div class="wrap">
-        <h1>Functiebeheer</h1>
-        <h2 class="nav-tab-wrapper">
-    <?php
-    // Mapping van tab keys naar zichtbare namen
+
     $tab_names = [
-        'algemeen' => 'Algemeen',
-        'woocommerce_tweaks' => 'WooCommerce tweaks',
-        'woocommerce_info' => 'WooCommerce Info',
-        'facetwp' => 'FacetWP',
-        'links' => 'Nuttige links'
+        'algemeen'            => 'Algemeen',
+        'woocommerce_tweaks'  => 'WooCommerce Tweaks',
+        'woocommerce_info'    => 'WooCommerce Info',
+        'facetwp'             => 'FacetWP',
+        'links'               => 'Nuttige links',
     ];
     ?>
-    <?php foreach ($allowed_tabs as $tab): ?>
-        <a href="?page=functiebeheer&tab=<?= esc_attr($tab) ?>" class="nav-tab <?= $active_tab === $tab ? 'nav-tab-active' : '' ?>">
-            <?= $tab_names[$tab] ?? ucwords(str_replace('_', ' ', $tab)) ?>
-        </a>
-    <?php endforeach; ?>
-</h2>
+    <div class="wrap">
+        <h1>LMPR Tools</h1>
+        <h2 class="nav-tab-wrapper">
+            <?php foreach ($allowed_tabs as $tab): ?>
+                <a href="?page=lmpr-tools&tab=<?= esc_attr($tab) ?>"
+                   class="nav-tab <?= $active_tab === $tab ? 'nav-tab-active' : '' ?>">
+                    <?= esc_html($tab_names[$tab] ?? ucwords(str_replace('_', ' ', $tab))) ?>
+                </a>
+            <?php endforeach; ?>
+        </h2>
 
         <?php if ($active_tab === 'woocommerce_info'): ?>
             <div class="postbox">
@@ -104,32 +107,33 @@ function render_functiebeheer_page() {
                 </div>
             </div>
 
-            <?php elseif ($active_tab === 'facetwp'): ?>
-                <div class="postbox">
-                    <h2 class="hndle"><span>FacetWP Instellingen</span></h2>
-                    <div class="inside">
-                        <form method="post" action="options.php">
-                            <?php
-                            settings_fields('functiebeheer_facetwp');
-                            do_settings_sections('functiebeheer_facetwp');
-                            submit_button('Instellingen opslaan');
-                            ?>
-                        </form>
-                    </div>
+        <?php elseif ($active_tab === 'facetwp'): ?>
+            <div class="postbox">
+                <h2 class="hndle"><span>FacetWP Instellingen</span></h2>
+                <div class="inside">
+                    <form method="post" action="options.php">
+                        <?php
+                        settings_fields('functiebeheer_facetwp');
+                        do_settings_sections('functiebeheer_facetwp');
+                        submit_button('Instellingen opslaan');
+                        ?>
+                    </form>
                 </div>
-
-                <div class="postbox">
-                    <h2 class="hndle"><span>FacetWP Index beheer</span></h2>
-                    <div class="inside">
-                        <p>Laatst geïndexeerd: 
-                            <?= get_option('functiebeheer_facetwp_last_indexed') ? date('Y-m-d H:i:s', get_option('functiebeheer_facetwp_last_indexed')) : 'Nog nooit'; ?>
-                        </p>
-                        <form method="post">
-                            <?php submit_button('FacetWP index opnieuw opbouwen', 'primary', 'functiebeheer_facetwp_index_now'); ?>
-                        </form>
-                    </div>
+            </div>
+            <div class="postbox">
+                <h2 class="hndle"><span>FacetWP Index beheer</span></h2>
+                <div class="inside">
+                    <p>Laatst geïndexeerd:
+                        <?= get_option('functiebeheer_facetwp_last_indexed')
+                            ? date('Y-m-d H:i:s', get_option('functiebeheer_facetwp_last_indexed'))
+                            : 'Nog nooit'; ?>
+                    </p>
+                    <form method="post">
+                        <?php wp_nonce_field('facetwp_index_action', 'facetwp_index_nonce'); ?>
+                        <?php submit_button('FacetWP index opnieuw opbouwen', 'primary', 'functiebeheer_facetwp_index_now'); ?>
+                    </form>
                 </div>
-
+            </div>
 
         <?php elseif ($active_tab === 'links'): ?>
             <div class="postbox">
@@ -151,281 +155,204 @@ function render_functiebeheer_page() {
                 ?>
             </form>
         <?php endif; ?>
-
-        
-
-      
     </div>
     <?php
 }
 
-// Helper voor checkbox met tooltip
+// ─── 4. Helper: checkbox ──────────────────────────────────────────────────────
+
 function functiebeheer_checkbox($option_group, $option_name, $label, $tooltip = '') {
     $options = get_option($option_group);
-    $value = $options[$option_name] ?? false;
+    $value   = $options[$option_name] ?? false;
     echo '<div class="functiebeheer-field">';
-    echo '<label><input type="checkbox" name="'.$option_group.'['.$option_name.']" value="1"' . checked(1, $value, false) . ' /> '.$label.'</label>';
+    echo '<label><input type="checkbox" name="' . $option_group . '[' . $option_name . ']" value="1"' . checked(1, $value, false) . ' /> ' . esc_html($label) . '</label>';
     if ($tooltip) {
-        echo '<p class="description">'.$tooltip.'</p>';
+        echo '<p class="description">' . esc_html($tooltip) . '</p>';
     }
     echo '</div>';
 }
 
-// Helper voor tekstveld met tooltip
+// ─── 5. Helper: tekstveld ─────────────────────────────────────────────────────
+
 function functiebeheer_textfield($option_group, $option_name, $placeholder = '', $tooltip = '') {
     $options = get_option($option_group);
-    $value = $options[$option_name] ?? '';
+    $value   = $options[$option_name] ?? '';
     echo '<div class="functiebeheer-field">';
-    echo '<input type="text" name="'.$option_group.'['.$option_name.']" value="'.esc_attr($value).'" class="regular-text" placeholder="'.esc_attr($placeholder).'" />';
+    echo '<input type="text" name="' . $option_group . '[' . $option_name . ']" value="' . esc_attr($value) . '" class="regular-text" placeholder="' . esc_attr($placeholder) . '" />';
     if ($tooltip) {
-        echo '<p class="description">'.$tooltip.'</p>';
+        echo '<p class="description">' . esc_html($tooltip) . '</p>';
     }
     echo '</div>';
 }
+
+// ─── 6. WooCommerce info pagina ───────────────────────────────────────────────
 
 function functiebeheer_show_woocommerce_info() {
 
-    // Toon of prijzen inclusief of exclusief BTW worden weergegeven
-$prices_include_tax = get_option('woocommerce_prices_include_tax') === 'yes';
+    // Prijzen incl/excl BTW
+    $prices_include_tax = get_option('woocommerce_prices_include_tax') === 'yes';
+    echo '<h3>Prijzen weergegeven <span><a href="' . admin_url('admin.php?page=wc-settings&tab=tax') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    echo '<p>Prijzen worden momenteel <strong>' . ($prices_include_tax ? 'inclusief BTW' : 'exclusief BTW') . '</strong> weergegeven in de webshop.</p>';
 
-echo '<h3>Prijzen weergegeven <span><a href="'.admin_url('admin.php?page=wc-settings&tab=tax').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
-echo '<p>Prijzen worden momenteel <strong>' . ($prices_include_tax ? 'inclusief BTW' : 'exclusief BTW') . '</strong> weergegeven in de webshop.</p>';
-
-
-     // Producten overzicht
-     echo '<h3>Producten <span><a href="'.admin_url('edit.php?post_type=product').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bekijk producten)</a></span></h3>';
-
-        $total_products = wp_count_posts('product')->publish;
-        $no_stock_query = new WP_Query([
-            'post_type' => 'product',
-            'post_status' => 'publish',
-            'meta_query' => [
-                [
-                    'key' => '_stock_status',
-                    'value' => 'outofstock'
-                ]
-            ],
-            'fields' => 'ids',
-            'nopaging' => true,
-        ]);
-        $no_stock_total = $no_stock_query->found_posts;
+    // Producten overzicht
+    echo '<h3>Producten <span><a href="' . admin_url('edit.php?post_type=product') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bekijk producten)</a></span></h3>';
+    $total_products = wp_count_posts('product')->publish;
+    $no_stock_query = new WP_Query([
+        'post_type'   => 'product',
+        'post_status' => 'publish',
+        'meta_query'  => [[
+            'key'   => '_stock_status',
+            'value' => 'outofstock',
+        ]],
+        'fields'      => 'ids',
+        'nopaging'    => true,
+    ]);
+    $no_stock_total = $no_stock_query->found_posts;
 
     echo '<table class="widefat"><thead><tr><th>Metric</th><th>Aantal</th></tr></thead><tbody>';
-    echo '<tr><td>Aantal producten totaal</td><td>'.esc_html($total_products).'</td></tr>';
-    echo '<tr><td>Aantal producten niet op voorraad</td><td>'.esc_html($no_stock_total).'</td></tr>';
+    echo '<tr><td>Aantal producten totaal</td><td>' . esc_html($total_products) . '</td></tr>';
+    echo '<tr><td>Aantal producten niet op voorraad</td><td>' . esc_html($no_stock_total) . '</td></tr>';
     echo '</tbody></table>';
 
-    // Bestellingen overzicht
-    // Bereken eerste dag van de maand
+    // Bestellingen deze maand
     $first_day = date('Y-m-01 00:00:00');
-    $now = current_time('mysql');
+    $now       = current_time('mysql');
 
-    // Query: alle orders deze maand ophalen
     $orders_this_month = wc_get_orders([
-        'limit' => -1,
-        'status' => ['wc-completed', 'wc-cancelled', 'wc-refunded'],
+        'limit'        => -1,
+        'status'       => ['wc-completed', 'wc-cancelled', 'wc-refunded'],
         'date_created' => $first_day . '...' . $now,
-        'return' => 'ids',
+        'return'       => 'ids',
     ]);
 
-    // Initialiseer tellers
     $status_counts = [
         'completed' => ['count' => 0, 'total' => 0],
         'cancelled' => ['count' => 0, 'total' => 0],
-        'refunded' => ['count' => 0, 'total' => 0],
-        'total' => ['count' => 0, 'total' => 0],
+        'refunded'  => ['count' => 0, 'total' => 0],
+        'total'     => ['count' => 0, 'total' => 0],
     ];
 
-    // Tellen per status
     foreach ($orders_this_month as $order_id) {
-        $order = wc_get_order($order_id);
+        $order  = wc_get_order($order_id);
         $status = $order->get_status();
-        $total = $order->get_total();
-
+        $total  = $order->get_total();
         $status_counts['total']['count']++;
         $status_counts['total']['total'] += $total;
-
         if (isset($status_counts[$status])) {
             $status_counts[$status]['count']++;
             $status_counts[$status]['total'] += $total;
         }
     }
 
-    // Output tabel
     echo '<h3>Bestellingen deze maand</h3>';
     echo '<table class="widefat"><thead><tr><th>Status</th><th>Aantal</th><th>Totaalwaarde</th></tr></thead><tbody>';
-    echo '<tr><td>Totaal</td><td>' . esc_html($status_counts['total']['count']) . '</td><td>' . wc_price($status_counts['total']['total']) . '</td></tr>';
-    echo '<tr><td>Voltooid</td><td>' . esc_html($status_counts['completed']['count']) . '</td><td>' . wc_price($status_counts['completed']['total']) . '</td></tr>';
+    echo '<tr><td>Totaal</td><td>'      . esc_html($status_counts['total']['count'])     . '</td><td>' . wc_price($status_counts['total']['total'])     . '</td></tr>';
+    echo '<tr><td>Voltooid</td><td>'    . esc_html($status_counts['completed']['count']) . '</td><td>' . wc_price($status_counts['completed']['total']) . '</td></tr>';
     echo '<tr><td>Geannuleerd</td><td>' . esc_html($status_counts['cancelled']['count']) . '</td><td>' . wc_price($status_counts['cancelled']['total']) . '</td></tr>';
-    echo '<tr><td>Terugbetaald</td><td>' . esc_html($status_counts['refunded']['count']) . '</td><td>' . wc_price($status_counts['refunded']['total']) . '</td></tr>';
+    echo '<tr><td>Terugbetaald</td><td>'. esc_html($status_counts['refunded']['count'])  . '</td><td>' . wc_price($status_counts['refunded']['total'])  . '</td></tr>';
     echo '</tbody></table>';
 
+    // Bestellingen totaal
+    echo '<h3>Bestellingen totaal <span><a href="' . admin_url('edit.php?post_type=shop_order') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bekijk bestellingen)</a></span></h3>';
 
-    echo '<h3>Bestellingen totaal<span> <a href="'.admin_url('edit.php?post_type=shop_order').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bekijk bestellingen)</a></span></h3>';
-    $order_counts = wp_count_posts('shop_order');
+    // HPOS-compatibel: gebruik wc_get_orders ipv wp_count_posts
+    $order_statuses    = ['completed', 'cancelled', 'refunded', 'processing', 'on-hold', 'pending', 'failed'];
+    $total_orders      = 0;
+    $total_completed   = 0;
+    $total_cancelled   = 0;
+    $total_refunded    = 0;
 
-    $total_orders = array_sum((array) $order_counts);
-    $total_completed = $order_counts->{'wc-completed'} ?? 0;
-    $total_cancelled = $order_counts->{'wc-cancelled'} ?? 0;
-    $total_refunded = $order_counts->{'wc-refunded'} ?? 0;
-    
+    foreach ($order_statuses as $status) {
+        $count = wc_get_orders(['status' => 'wc-' . $status, 'limit' => -1, 'return' => 'ids']);
+        $n     = count($count);
+        $total_orders += $n;
+        if ($status === 'completed') $total_completed = $n;
+        if ($status === 'cancelled') $total_cancelled = $n;
+        if ($status === 'refunded')  $total_refunded  = $n;
+    }
+
     echo '<table class="widefat"><thead><tr><th>Status</th><th>Aantal</th></tr></thead><tbody>';
-    echo '<tr><td>Totaal</td><td>' . esc_html($total_orders) . '</td></tr>';
-    echo '<tr><td>Voltooid</td><td>' . esc_html($total_completed) . '</td></tr>';
+    echo '<tr><td>Totaal</td><td>'      . esc_html($total_orders)    . '</td></tr>';
+    echo '<tr><td>Voltooid</td><td>'    . esc_html($total_completed) . '</td></tr>';
     echo '<tr><td>Geannuleerd</td><td>' . esc_html($total_cancelled) . '</td></tr>';
-    echo '<tr><td>Terugbetaald</td><td>' . esc_html($total_refunded) . '</td></tr>';
-    echo '</tbody></table>';        
+    echo '<tr><td>Terugbetaald</td><td>'. esc_html($total_refunded)  . '</td></tr>';
+    echo '</tbody></table>';
 
-      // Zijn algemene voorwaarden ingesteld?
-      $terms_page_id = get_option('woocommerce_terms_page_id');
-      $terms_enabled = $terms_page_id && $terms_page_id != 0;
-  
-      echo '<h3>Algemene voorwaarden <span><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
-      if ($terms_enabled) {
-          $terms_page_link = get_edit_post_link($terms_page_id);
-          echo '<p>Algemene voorwaarden zijn ingesteld: <a href="'.esc_url($terms_page_link).'">'.get_the_title($terms_page_id).'</a></p>';
-      } else {
-          echo '<p>Algemene voorwaarden zijn <strong>niet ingesteld</strong>.</p>';
-      }
+    // Algemene voorwaarden
+    $terms_page_id  = get_option('woocommerce_terms_page_id');
+    $terms_enabled  = $terms_page_id && $terms_page_id != 0;
+    echo '<h3>Algemene voorwaarden <span><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    if ($terms_enabled) {
+        echo '<p>Algemene voorwaarden zijn ingesteld: <a href="' . esc_url(get_edit_post_link($terms_page_id)) . '">' . esc_html(get_the_title($terms_page_id)) . '</a></p>';
+    } else {
+        echo '<p>Algemene voorwaarden zijn <strong>niet ingesteld</strong>.</p>';
+    }
 
-    // Overzicht BTW tarieven  
+    // BTW tarieven
     $tax_classes = WC_Tax::get_tax_classes();
     array_unshift($tax_classes, 'standard');
-
-    echo '<h3>BTW tarieven <span><a href="'.admin_url('admin.php?page=wc-settings&tab=tax').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    echo '<h3>BTW tarieven <span><a href="' . admin_url('admin.php?page=wc-settings&tab=tax') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
     echo '<table class="widefat"><thead><tr><th>BTW klasse</th><th>Land</th><th>Stad</th><th>Postcode</th><th>Percentage</th></tr></thead><tbody>';
-
     $has_rates = false;
-
     foreach ($tax_classes as $tax_class) {
         $rates = WC_Tax::get_rates_for_tax_class($tax_class);
         foreach ($rates as $rate) {
             $has_rates = true;
             echo '<tr>';
-            echo '<td>'.esc_html($tax_class ?: 'standard').'</td>';
-            echo '<td>'.esc_html($rate->tax_rate_country === '*' || $rate->tax_rate_country === '' ? 'Overige' : $rate->tax_rate_country).'</td>';
-            echo '<td>'.esc_html($rate->tax_rate_city ?? '').'</td>';
-            echo '<td>'.esc_html($rate->tax_rate_postcode ?? '').'</td>';
-            echo '<td>'.($rate->tax_rate == '0.0000' ? 'Geen BTW' : esc_html(rtrim($rate->tax_rate, '0.') . '%')).'</td>';
+            echo '<td>' . esc_html($tax_class ?: 'standard') . '</td>';
+            echo '<td>' . esc_html(($rate->tax_rate_country === '*' || $rate->tax_rate_country === '') ? 'Overige' : $rate->tax_rate_country) . '</td>';
+            echo '<td>' . esc_html($rate->tax_rate_city ?? '') . '</td>';
+            echo '<td>' . esc_html($rate->tax_rate_postcode ?? '') . '</td>';
+            echo '<td>' . ($rate->tax_rate == '0.0000' ? 'Geen BTW' : esc_html(rtrim($rate->tax_rate, '0.') . '%')) . '</td>';
             echo '</tr>';
         }
     }
-
     if (!$has_rates) {
         echo '<tr><td colspan="5">Geen BTW tarieven ingesteld.</td></tr>';
     }
-
     echo '</tbody></table>';
 
-    echo '<h3>Verzendzones en methodes <span><a href="'.admin_url('admin.php?page=wc-settings&tab=shipping').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    // Verzendzones
+    echo '<h3>Verzendzones en methodes <span><a href="' . admin_url('admin.php?page=wc-settings&tab=shipping') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
     echo '<table class="widefat"><thead><tr><th>Zone naam</th><th>Landen</th><th>Methode</th><th>Naam</th><th>Kosten / Voorwaarden</th></tr></thead><tbody>';
-    
+
     $zones = WC_Shipping_Zones::get_zones();
+    $zones[] = ['zone_id' => 0]; // voeg "Rest van de wereld" toe
+
     foreach ($zones as $zone_data) {
-        $zone = new WC_Shipping_Zone($zone_data['zone_id']);
-        $zone_name = $zone->get_zone_name();
+        $zone           = new WC_Shipping_Zone($zone_data['zone_id']);
+        $zone_name      = $zone_data['zone_id'] === 0 ? 'Overige' : $zone->get_zone_name();
         $zone_locations = $zone->get_zone_locations();
-        $countries = array_map(fn($loc) => $loc->code, $zone_locations);
-        $countries_str = !empty($countries) ? implode(', ', $countries) : 'Overige';
-    
-        $methods = $zone->get_shipping_methods();
-        foreach ($methods as $method) {
-            $method_title = $method->get_method_title();
-            $instance_id = $method->get_instance_id();
-            $option_name = 'woocommerce_' . $method->id . '_' . $instance_id . '_settings';
-            $settings = get_option($option_name);
-    
-            $method_name = isset($settings['title']) ? $settings['title'] : '-';
-    
-            $cost_display = '-';
-    
-            if ($method->id === 'flat_rate' && isset($settings['cost'])) {
-                $cost = floatval($settings['cost']);
-                $cost_display = $cost <= 0 ? 'Gratis' : wc_price($cost);
-            }
-            elseif ($method->id === 'free_shipping') {
-                $condition = $settings['requires'] ?? 'n/a';
-                if ($condition === 'min_amount') {
-                    $min_amount = $settings['min_amount'] ?? '';
-                    $cost_display = 'Gratis verzending vanaf €' . number_format((float)$min_amount, 2, ',', '.');
-                } elseif ($condition === 'coupon') {
-                    $cost_display = 'Gratis verzending met kortingscoupon';
-                } elseif ($condition === 'either') {
-                    $min_amount = $settings['min_amount'] ?? '';
-                    $cost_display = 'Gratis verzending vanaf €' . number_format((float)$min_amount, 2, ',', '.') . ' of kortingscoupon';
-                } else {
-                    $cost_display = 'Gratis verzending';
-                }
-            } else {
-                $cost_display = 'n.v.t.';
-            }
-    
+        $countries      = array_map(fn($loc) => $loc->code, $zone_locations);
+        $countries_str  = $zone_data['zone_id'] === 0 ? 'Alle landen' : (!empty($countries) ? implode(', ', $countries) : 'Overige');
+
+        foreach ($zone->get_shipping_methods() as $method) {
+            $instance_id  = $method->get_instance_id();
+            $option_name  = 'woocommerce_' . $method->id . '_' . $instance_id . '_settings';
+            $settings     = get_option($option_name);
+            $method_name  = $settings['title'] ?? '-';
+            $cost_display = lmpr_shipping_cost_display($method->id, $settings);
+
             echo '<tr>';
-            echo '<td>'.esc_html($zone_name).'</td>';
-            echo '<td>'.esc_html($countries_str).'</td>';
-            echo '<td>'.esc_html($method_title).'</td>';
-            echo '<td>'.esc_html($method_name).'</td>';
-            echo '<td>'.wp_kses_post($cost_display).'</td>';
+            echo '<td>' . esc_html($zone_name) . '</td>';
+            echo '<td>' . esc_html($countries_str) . '</td>';
+            echo '<td>' . esc_html($method->get_method_title()) . '</td>';
+            echo '<td>' . esc_html($method_name) . '</td>';
+            echo '<td>' . wp_kses_post($cost_display) . '</td>';
             echo '</tr>';
         }
     }
-    
-    // Rest van de wereld zone
-    $default_zone = new WC_Shipping_Zone(0);
-    $methods = $default_zone->get_shipping_methods();
-    foreach ($methods as $method) {
-        $method_title = $method->get_method_title();
-        $instance_id = $method->get_instance_id();
-        $option_name = 'woocommerce_' . $method->id . '_' . $instance_id . '_settings';
-        $settings = get_option($option_name);
-    
-        $method_name = isset($settings['title']) ? $settings['title'] : '-';
-    
-        $cost_display = '-';
-    
-        if ($method->id === 'flat_rate' && isset($settings['cost'])) {
-            $cost = floatval($settings['cost']);
-            $cost_display = $cost <= 0 ? 'Gratis' : wc_price($cost);
-        }
-        elseif ($method->id === 'free_shipping') {
-            $condition = $settings['requires'] ?? 'n/a';
-            if ($condition === 'min_amount') {
-                $min_amount = $settings['min_amount'] ?? '';
-                $cost_display = 'Gratis verzending vanaf €' . number_format((float)$min_amount, 2, ',', '.');
-            } elseif ($condition === 'coupon') {
-                $cost_display = 'Gratis verzending met kortingscoupon';
-            } elseif ($condition === 'either') {
-                $min_amount = $settings['min_amount'] ?? '';
-                $cost_display = 'Gratis verzending vanaf €' . number_format((float)$min_amount, 2, ',', '.') . ' of kortingscoupon';
-            } else {
-                $cost_display = 'Gratis verzending';
-            }
-        } else {
-            $cost_display = 'n.v.t.';
-        }
-    
-        echo '<tr>';
-        echo '<td>Overige</td>';
-        echo '<td>Alle landen</td>';
-        echo '<td>'.esc_html($method_title).'</td>';
-        echo '<td>'.esc_html($method_name).'</td>';
-        echo '<td>'.wp_kses_post($cost_display).'</td>';
-        echo '</tr>';
-    }
-    
     echo '</tbody></table>';
-    
 
     // Betaalmethodes
-    echo '<h3>Betaalmethodes <span><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    echo '<h3>Betaalmethodes <span><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
     $gateways = WC()->payment_gateways->payment_gateways();
-
     if (!empty($gateways)) {
         echo '<table class="widefat"><thead><tr><th>Titel</th><th>Status</th></tr></thead><tbody>';
         foreach ($gateways as $gateway) {
             echo '<tr>';
-            echo '<td>'.esc_html($gateway->get_title()).'</td>';
-            echo '<td>'.esc_html($gateway->enabled === 'yes' ? 'Actief' : 'Uitgeschakeld').'</td>';
+            echo '<td>' . esc_html($gateway->get_title()) . '</td>';
+            echo '<td>' . esc_html($gateway->enabled === 'yes' ? 'Actief' : 'Uitgeschakeld') . '</td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
@@ -433,86 +360,87 @@ echo '<p>Prijzen worden momenteel <strong>' . ($prices_include_tax ? 'inclusief 
         echo '<p>Geen betaalmethodes gevonden.</p>';
     }
 
-// Coupons
-    echo '<h3>Actieve kortingscodes <span><a href="'.admin_url('edit.php?post_type=shop_coupon').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
-    $coupons = get_posts([
-        'post_type' => 'shop_coupon',
-        'posts_per_page' => -1,
-        'orderby' => 'date',
-        'order' => 'DESC',
-    ]);
-    
+    // Kortingscodes
+    echo '<h3>Actieve kortingscodes <span><a href="' . admin_url('edit.php?post_type=shop_coupon') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    $coupons = get_posts(['post_type' => 'shop_coupon', 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC']);
     if (!empty($coupons)) {
         echo '<table class="widefat"><thead><tr><th>Code</th><th>Type</th><th>Waarde</th><th>Min. bedrag</th><th>Vervaldatum</th></tr></thead><tbody>';
         foreach ($coupons as $post) {
-            $coupon = new WC_Coupon($post->ID);
-            $discount_type = $coupon->get_discount_type();
-            $amount = $coupon->get_amount();
-            $min_amount = $coupon->get_minimum_amount();
+            $coupon      = new WC_Coupon($post->ID);
             $expiry_date = $coupon->get_date_expires();
-        
             echo '<tr>';
-            echo '<td>'.esc_html($coupon->get_code()).'</td>';
-            echo '<td>'.esc_html(ucfirst(str_replace('_', ' ', $discount_type))).'</td>';
-            echo '<td>'.esc_html(wc_price($amount)).'</td>';
-            echo '<td>'.esc_html(!empty($min_amount) ? wc_price($min_amount) : '-').'</td>';
-            echo '<td>'.esc_html($expiry_date ? $expiry_date->date_i18n('Y-m-d') : '-').'</td>';
+            echo '<td>' . esc_html($coupon->get_code()) . '</td>';
+            echo '<td>' . esc_html(ucfirst(str_replace('_', ' ', $coupon->get_discount_type()))) . '</td>';
+            echo '<td>' . wc_price($coupon->get_amount()) . '</td>';
+            echo '<td>' . (!empty($coupon->get_minimum_amount()) ? wc_price($coupon->get_minimum_amount()) : '-') . '</td>';
+            echo '<td>' . esc_html($expiry_date ? $expiry_date->date_i18n('Y-m-d') : '-') . '</td>';
             echo '</tr>';
         }
-        
         echo '</tbody></table>';
     } else {
         echo '<p>Geen actieve kortingscodes gevonden.</p>';
     }
 
-    // E-mail instellingen WooCommerce
-    echo '<h3>E-mail afzenderinstellingen <span><a href="'.admin_url('admin.php?page=wc-settings&tab=email').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
-
-        $from_name = get_option('woocommerce_email_from_name', get_bloginfo('name'));
-        $from_address = get_option('woocommerce_email_from_address', get_option('admin_email'));
-
-        echo '<table class="widefat"><thead><tr><th>Afzender naam</th><th>Afzender e-mailadres</th></tr></thead><tbody>';
-        echo '<tr>';
-        echo '<td>'.esc_html($from_name).'</td>';
-        echo '<td>'.esc_html($from_address).'</td>';
-        echo '</tr>';
-        echo '</tbody></table>';
-
-    // E-mails verzonden naar
-    echo '<h3>Bestelnotificatie ontvangers <span><a href="'.admin_url('admin.php?page=wc-settings&tab=email').'" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
-
-    $new_order_email = get_option('woocommerce_new_order_recipient', get_option('admin_email'));
-    $cancelled_order_email = get_option('woocommerce_cancelled_order_recipient', get_option('admin_email'));
-    $failed_order_email = get_option('woocommerce_failed_order_recipient', get_option('admin_email'));
-
-    echo '<table class="widefat"><thead><tr><th>Type mail</th><th>Wordt verzonden naar</th></tr></thead><tbody>';
-    echo '<tr><td>Nieuwe bestelling</td><td>'.esc_html($new_order_email).'</td></tr>';
-    echo '<tr><td>Geannuleerde bestelling</td><td>'.esc_html($cancelled_order_email).'</td></tr>';
-    echo '<tr><td>Mislukte bestelling</td><td>'.esc_html($failed_order_email).'</td></tr>';
+    // E-mail instellingen
+    echo '<h3>E-mail afzenderinstellingen <span><a href="' . admin_url('admin.php?page=wc-settings&tab=email') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    echo '<table class="widefat"><thead><tr><th>Afzender naam</th><th>Afzender e-mailadres</th></tr></thead><tbody>';
+    echo '<tr>';
+    echo '<td>' . esc_html(get_option('woocommerce_email_from_name', get_bloginfo('name'))) . '</td>';
+    echo '<td>' . esc_html(get_option('woocommerce_email_from_address', get_option('admin_email'))) . '</td>';
+    echo '</tr>';
     echo '</tbody></table>';
 
+    echo '<h3>Bestelnotificatie ontvangers <span><a href="' . admin_url('admin.php?page=wc-settings&tab=email') . '" target="_blank" style="text-decoration:none;font-size:0.9em;">(bewerk)</a></span></h3>';
+    echo '<table class="widefat"><thead><tr><th>Type mail</th><th>Wordt verzonden naar</th></tr></thead><tbody>';
+    echo '<tr><td>Nieuwe bestelling</td><td>'      . esc_html(get_option('woocommerce_new_order_recipient',       get_option('admin_email'))) . '</td></tr>';
+    echo '<tr><td>Geannuleerde bestelling</td><td>'. esc_html(get_option('woocommerce_cancelled_order_recipient', get_option('admin_email'))) . '</td></tr>';
+    echo '<tr><td>Mislukte bestelling</td><td>'    . esc_html(get_option('woocommerce_failed_order_recipient',    get_option('admin_email'))) . '</td></tr>';
+    echo '</tbody></table>';
 }
 
-// Registreer instellingen en velden
+// ─── 7. Helper: verzendkosten weergave ────────────────────────────────────────
+
+function lmpr_shipping_cost_display($method_id, $settings) {
+    if ($method_id === 'flat_rate' && isset($settings['cost'])) {
+        $cost = floatval($settings['cost']);
+        return $cost <= 0 ? 'Gratis' : wc_price($cost);
+    }
+    if ($method_id === 'free_shipping') {
+        $condition  = $settings['requires'] ?? '';
+        $min_amount = isset($settings['min_amount']) ? number_format((float)$settings['min_amount'], 2, ',', '.') : '';
+        switch ($condition) {
+            case 'min_amount': return 'Gratis vanaf €' . $min_amount;
+            case 'coupon':     return 'Gratis met kortingscoupon';
+            case 'either':     return 'Gratis vanaf €' . $min_amount . ' of kortingscoupon';
+            default:           return 'Gratis verzending';
+        }
+    }
+    return 'n.v.t.';
+}
+
+// ─── 8. Instellingen registreren ──────────────────────────────────────────────
+
 add_action('admin_init', function () {
+
+    // FacetWP index opbouwen (met nonce check)
     if (isset($_POST['functiebeheer_facetwp_index_now'])) {
+        if (!check_admin_referer('facetwp_index_action', 'facetwp_index_nonce')) {
+            wp_die('Beveiligingscheck mislukt.');
+        }
         if (defined('FACETWP_VERSION') && class_exists('FacetWP')) {
             FWP()->indexer->index();
             update_option('functiebeheer_facetwp_last_indexed', current_time('timestamp'));
-            add_action('admin_notices', function () {
-                echo '<div class="notice notice-success is-dismissible"><p>FacetWP index is opnieuw opgebouwd.</p></div>';
-            });
+            add_action('admin_notices', fn() =>
+                print('<div class="notice notice-success is-dismissible"><p>FacetWP index is opnieuw opgebouwd.</p></div>')
+            );
         } else {
-            add_action('admin_notices', function () {
-                echo '<div class="notice notice-error is-dismissible"><p>FacetWP is niet actief of niet gevonden.</p></div>';
-            });
+            add_action('admin_notices', fn() =>
+                print('<div class="notice notice-error is-dismissible"><p>FacetWP is niet actief of niet gevonden.</p></div>')
+            );
         }
     }
-});
 
-
-add_action('admin_init', function () {
-    // ALGEMEEN
+    // Algemeen
     register_setting('functiebeheer_algemeen', 'functiebeheer_algemeen');
     add_settings_section('algemeen_section', '', null, 'functiebeheer_algemeen');
 
@@ -525,7 +453,7 @@ add_action('admin_init', function () {
     , 'functiebeheer_algemeen', 'algemeen_section');
 
     add_settings_field('algemeen_logo_alt_tekst', 'Logo alt tekst', function () {
-        $options = get_option('functiebeheer_algemeen');
+        $options   = get_option('functiebeheer_algemeen');
         $is_active = $options['algemeen_logo_alt_actief'] ?? false;
         if ($is_active) {
             functiebeheer_textfield('functiebeheer_algemeen', 'algemeen_logo_alt_tekst', 'Bijv: Mijn Bedrijfsnaam logo', 'De alt-tekst die getoond wordt bij het logo.');
@@ -539,16 +467,10 @@ add_action('admin_init', function () {
     , 'functiebeheer_algemeen', 'algemeen_section');
 
     add_settings_field('algemeen_gp_nav_shortcode', 'GeneratePress menu shortcode', fn() =>
-    functiebeheer_checkbox(
-        'functiebeheer_algemeen',
-        'algemeen_gp_nav_shortcode',
-        'Activeer [gp_nav] shortcode',
-        'Voegt de shortcode [gp_nav] toe waarmee je het GeneratePress menu in content of widgets kunt tonen.'
-    )
+        functiebeheer_checkbox('functiebeheer_algemeen', 'algemeen_gp_nav_shortcode', 'Activeer [gp_nav] shortcode', 'Voegt de shortcode [gp_nav] toe waarmee je het GeneratePress menu in content of widgets kunt tonen.')
     , 'functiebeheer_algemeen', 'algemeen_section');
 
-
-    // WOOCOMMERCE TWEAKS
+    // WooCommerce Tweaks
     if (class_exists('WooCommerce')) {
         register_setting('functiebeheer_woocommerce_tweaks', 'functiebeheer_woocommerce_tweaks');
         add_settings_section('woocommerce_tweaks_section', '', null, 'functiebeheer_woocommerce_tweaks');
@@ -567,22 +489,24 @@ add_action('admin_init', function () {
 
         add_settings_field('woocommerce_custom_translations', 'Custom WooCommerce vertalingen (JSON)', function () {
             $options = get_option('functiebeheer_woocommerce_tweaks');
-            $value = $options['woocommerce_custom_translations'] ?? '';
+            $value   = $options['woocommerce_custom_translations'] ?? '';
             echo '<textarea name="functiebeheer_woocommerce_tweaks[woocommerce_custom_translations]" rows="10" cols="70" placeholder=\'{"Op voorraad": "Op voorraad, direct leverbaar"}\'>' . esc_textarea($value) . '</textarea>';
             echo '<p class="description">Voer een JSON-array in met vertalingen. Sleutels zijn originele teksten, waarden zijn de vervangingen.</p>';
         }, 'functiebeheer_woocommerce_tweaks', 'woocommerce_tweaks_section');
     }
 
-    // FACETWP
+    // FacetWP
     if (defined('FACETWP_VERSION')) {
         register_setting('functiebeheer_facetwp', 'functiebeheer_facetwp');
         add_settings_section('facetwp_section', '', null, 'functiebeheer_facetwp');
 
         add_settings_field('facetwp_add_labels', 'FacetWP labels', fn() =>
             functiebeheer_checkbox('functiebeheer_facetwp', 'facetwp_add_labels', 'Toon labels boven FacetWP facetten', 'Voegt automatisch een h3 label boven elk facet toe.')
-            ,  'functiebeheer_facetwp', 'facetwp_section');
+        , 'functiebeheer_facetwp', 'facetwp_section');
     }
 });
+
+// ─── 9. Init: Algemeen ────────────────────────────────────────────────────────
 
 function init_algemeen() {
     $algemeen = get_option('functiebeheer_algemeen');
@@ -603,7 +527,7 @@ function init_algemeen() {
             add_action('generate_inside_slideout_navigation', 'generate_construct_logo', -10);
         },
         'algemeen_gp_nav_shortcode' => function () {
-            add_shortcode('gp_nav', function ($atts) {
+            add_shortcode('gp_nav', function () {
                 ob_start();
                 if (function_exists('generate_navigation_position')) {
                     generate_navigation_position();
@@ -612,7 +536,7 @@ function init_algemeen() {
                 }
                 return ob_get_clean();
             });
-        }
+        },
     ];
 
     foreach ($hooks as $key => $callback) {
@@ -622,7 +546,8 @@ function init_algemeen() {
     }
 }
 
-// Woo tweaks hier
+// ─── 10. Init: WooCommerce ────────────────────────────────────────────────────
+
 function init_woocommerce() {
     if (!class_exists('WooCommerce')) return;
 
@@ -648,7 +573,7 @@ function init_woocommerce() {
                     return $json[$translated_text] ?? $translated_text;
                 }, 20, 3);
             }
-        }
+        },
     ];
 
     foreach ($hooks as $key => $callback) {
@@ -658,40 +583,39 @@ function init_woocommerce() {
     }
 }
 
-// FacetWP tweaks
+// ─── 11. Init: FacetWP ───────────────────────────────────────────────────────
+
 function init_facetwp() {
     if (!defined('FACETWP_VERSION')) return;
 
     $facetwp = get_option('functiebeheer_facetwp');
 
     $hooks = [
-
         'facetwp_add_labels' => function () {
-            add_action('wp_footer', function () {
-                ?>
+            add_action('wp_footer', function () { ?>
                 <script>
-                  (function($) {
+                (function($) {
                     $(document).on('facetwp-loaded', function() {
-                      $('.facetwp-facet').each(function() {
-                        var facet = $(this);
-                        var facet_name = facet.attr('data-name');
-                        var facet_type = facet.attr('data-type');
-                        var facet_label = FWP.settings.labels[facet_name];
-                        if (facet_type !== 'pager' && facet_type !== 'sort') {
-                          if (('undefined' === typeof FWP.settings.num_choices[facet_name] ||
-                            ('undefined' !== typeof FWP.settings.num_choices[facet_name] && FWP.settings.num_choices[facet_name] > 0)) && $('.facet-label[data-for="' + facet_name + '"]').length < 1) {
-                            facet.before('<h3 class="facet-label" data-for="' + facet_name + '">' + facet_label + '</h3>');
-                          } else if ('undefined' !== typeof FWP.settings.num_choices[facet_name] && !FWP.settings.num_choices[facet_name] > 0) {
-                            $('.facet-label[data-for="' + facet_name + '"]').remove();
-                          }
-                        }
-                      });
+                        $('.facetwp-facet').each(function() {
+                            var facet      = $(this);
+                            var facet_name = facet.attr('data-name');
+                            var facet_type = facet.attr('data-type');
+                            var facet_label = FWP.settings.labels[facet_name];
+                            if (facet_type !== 'pager' && facet_type !== 'sort') {
+                                if (('undefined' === typeof FWP.settings.num_choices[facet_name] ||
+                                    ('undefined' !== typeof FWP.settings.num_choices[facet_name] && FWP.settings.num_choices[facet_name] > 0)) &&
+                                    $('.facet-label[data-for="' + facet_name + '"]').length < 1) {
+                                    facet.before('<h3 class="facet-label" data-for="' + facet_name + '">' + facet_label + '</h3>');
+                                } else if ('undefined' !== typeof FWP.settings.num_choices[facet_name] && !FWP.settings.num_choices[facet_name] > 0) {
+                                    $('.facet-label[data-for="' + facet_name + '"]').remove();
+                                }
+                            }
+                        });
                     });
-                  })(jQuery);
+                })(jQuery);
                 </script>
-                <?php
-            }, 100);
-        }
+            <?php }, 100);
+        },
     ];
 
     foreach ($hooks as $key => $callback) {
@@ -701,14 +625,66 @@ function init_facetwp() {
     }
 }
 
-
-
-
 add_action('init', function () {
     init_algemeen();
     init_woocommerce();
     init_facetwp();
 });
 
+// ─── 12. Deactiveren blokkeren ────────────────────────────────────────────────
 
-// INIT functies blijven hetzelfde (init_algemeen, init_woocommerce, init_facetwp)
+add_filter('plugin_action_links_lmpr-tools/lmpr-tools.php', function ($actions) {
+    unset($actions['deactivate']);
+    return $actions;
+});
+
+// ─── 13. GitHub update checker ────────────────────────────────────────────────
+
+add_filter('pre_set_site_transient_update_plugins', 'lmpr_tools_check_github_update');
+
+function lmpr_tools_check_github_update($transient) {
+    if (empty($transient->checked)) return $transient;
+
+    $plugin_slug     = 'lmpr-tools/lmpr-tools.php';
+    $github_user     = 'lamperdesign'; // ← aanpassen
+    $github_repo     = 'lmpr-tools';            // ← aanpassen indien anders
+
+    $current_version = $transient->checked[$plugin_slug] ?? null;
+    if (!$current_version) return $transient;
+
+    $cache_key = 'lmpr_tools_github_update';
+    $release   = get_transient($cache_key);
+
+    if (false === $release) {
+        $api_url  = "https://api.github.com/repos/{$github_user}/{$github_repo}/releases/latest";
+        $response = wp_remote_get($api_url, [
+            'headers' => ['User-Agent' => 'WordPress/' . get_bloginfo('version')],
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response)) return $transient;
+
+        $release = json_decode(wp_remote_retrieve_body($response));
+        if (empty($release->tag_name)) return $transient;
+
+        set_transient($cache_key, $release, 6 * HOUR_IN_SECONDS);
+    }
+
+    $latest_version = ltrim($release->tag_name, 'v');
+
+    if (version_compare($latest_version, $current_version, '>')) {
+        $transient->response[$plugin_slug] = (object) [
+            'slug'        => 'lmpr-tools',
+            'plugin'      => $plugin_slug,
+            'new_version' => $latest_version,
+            'url'         => "https://github.com/{$github_user}/{$github_repo}",
+            'package'     => $release->zipball_url,
+        ];
+    }
+
+    return $transient;
+}
+
+add_action('upgrader_process_complete', function () {
+    delete_transient('lmpr_tools_github_update');
+}, 10, 0);
